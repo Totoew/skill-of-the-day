@@ -1,19 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  basicSkills,
   directions,
-  getScope,
-  buildPlan,
-  coverage,
   percent,
-  skillGain,
-  layers,
-  filterByLayer,
-  skillContext,
-  basisJobs,
-  minimumDeficit,
-  SNAPSHOT_DATE,
-  UPDATE_INTERVAL_DAYS,
   formatNumber,
   vacancyText,
 } from "../data";
@@ -26,57 +14,14 @@ import {
 import SkillDialog from "../components/SkillDialog";
 import RoadmapGraph from "../components/RoadmapGraph";
 
-export default function Dashboard({ profile, update }) {
+export default function Dashboard({ profile, update, result, processing, blocked, error, recalculate, chooseLayer, reloadProfile }) {
+  const [mode, setMode] = useState("graph"), [selected, setSelected] = useState(null), [query, setQuery] = useState("");
+  const tabs = useRef(null);
+  const { jobs, steps, basicSkills: bases, remainingBasics: remaining, noSkills, covered,
+    minimumDeficit: minimum, selectedLayer: activeLayer } = result;
   const regionKey = JSON.stringify(profile.regions);
-  const bases = basicSkills[profile.direction];
-  const [mode, setMode] = useState("graph"),
-    [selected, setSelected] = useState(null),
-    [query, setQuery] = useState("");
-  const [layer, setLayer] = useState(null),
-    [processing, setProcessing] = useState(false),
-    [error, setError] = useState("");
-  const worker = useRef(null),
-    tabs = useRef(null);
-  const baseJobs = useMemo(
-    () => getScope(profile),
-    [profile.direction, regionKey, profile.level],
-  );
-  const layerValues = useMemo(
-    () => layers(baseJobs, profile.skills),
-    [baseJobs, profile.skills],
-  );
-  const activeLayer =
-    layer !== null && layerValues.some(([value]) => value === layer)
-      ? layer
-      : null;
-  const jobs = useMemo(
-    () => filterByLayer(baseJobs, profile.skills, activeLayer),
-    [baseJobs, profile.skills, activeLayer],
-  );
-  const computed = useMemo(
-    () => buildPlan(jobs, profile.skills, profile.direction),
-    [jobs, profile.skills, profile.direction, bases],
-  );
-  const [steps, setSteps] = useState(computed);
-  useEffect(() => {
-    setLayer(null);
-    setSelected(null);
-  }, [profile.direction, regionKey, profile.level]);
-  useEffect(() => {
-    if (layer !== activeLayer) setLayer(activeLayer);
-  }, [layer, activeLayer]);
-  useEffect(() => {
-    worker.current?.terminate();
-    setProcessing(false);
-    setSteps(computed);
-  }, [computed]);
-  useEffect(() => () => worker.current?.terminate(), []);
-  const remaining = bases.filter((skill) => !profile.skills.includes(skill));
-  const covered = coverage(jobs, profile.skills),
-    minimum = minimumDeficit(jobs, profile.skills);
-  const noSkills = !directions[profile.direction].skills.some((skill) =>
-    profile.skills.includes(skill),
-  );
+  useEffect(() => { setSelected(null); }, [profile.direction, regionKey, profile.level]);
+  const metric = (skill, step) => (step ? step.metrics : result.basics).find(item => item.skill === skill);
   function toggle(skill) {
     update({
       ...profile,
@@ -85,53 +30,8 @@ export default function Dashboard({ profile, update }) {
         : [...profile.skills, skill],
     });
   }
-  function recalculate() {
-    if (processing || !jobs.length) return;
-    setProcessing(true);
-    setError("");
-    let instance;
-    try {
-      instance = new Worker(new URL("../plan.worker.js", import.meta.url), {
-        type: "module",
-      });
-    } catch {
-      setError("Не удалось пересчитать план. Попробуйте ещё раз.");
-      setProcessing(false);
-      return;
-    }
-    worker.current = instance;
-    instance.onmessage = ({ data }) =>
-      requestAnimationFrame(() => {
-        if (worker.current !== instance) return;
-        if (data.error) setError(data.error);
-        else setSteps(data.steps);
-        setProcessing(false);
-        instance.terminate();
-      });
-    instance.onerror = () => {
-      setError("Не удалось пересчитать план. Попробуйте ещё раз.");
-      setProcessing(false);
-      instance.terminate();
-    };
-    instance.postMessage({
-      jobs,
-      skills: profile.skills,
-      direction: profile.direction,
-      bases: basicSkills[profile.direction],
-    });
-  }
-  const open = (skill, step) =>
-    setSelected({
-      skill,
-      step,
-      context: skillContext(profile.skills, step, skill),
-      jobs,
-    });
-  function chooseLayer(value) {
-    setSelected(null);
-    setLayer(value);
-    setError("");
-  }
+  const open = (skill, step) => setSelected({ skill, step, metric: metric(skill, step), jobs, source: result.source });
+  function selectLayer(value) { setSelected(null); chooseLayer(value); }
   function switchTab(value) {
     setMode(value);
   }
@@ -161,21 +61,22 @@ export default function Dashboard({ profile, update }) {
         <p className="scope-line">
           {directions[profile.direction].name} ·{" "}
           {profile.regions.join(" + ") || "Вся Россия"}
-          <span>Дата среза: {SNAPSHOT_DATE}</span>
+          <span>Дата среза: {new Date(result.snapshotDate).toLocaleDateString("ru-RU", { timeZone: "UTC" })}</span>
         </p>
         <LevelSelect
           value={profile.level || "all"}
-          disabled={processing}
+          disabled={blocked}
           onChange={(level) => update({ ...profile, level })}
         />
       </div>
       <section className="notice trends-notice">
         <strong>Обновление трендов навыков</strong>
         <p>
-          SQL: +3 · REST API: +3 к предыдущему срезу. Обновление каждые{" "}
-          {UPDATE_INTERVAL_DAYS} дней.
+          {result.source === "demo" ? "Рекомендации рассчитаны по демонстрационному срезу вакансий. " : "Рекомендации рассчитаны по срезу вакансий. "}
+          Интервал обновления срезов — {result.updateIntervalDays} дней.
         </p>
       </section>
+      {result.excludedVacancies > 0 && <p className="notice">Исключено из расчёта: {vacancyText(result.excludedVacancies)} — требования не распознаны либо установлена пометка исключения.</p>}
       {!noSkills && (
         <div className="metrics">
           <section className="metric metric-primary">
@@ -203,13 +104,13 @@ export default function Dashboard({ profile, update }) {
         </div>
       )}
       <RequirementLegend />
-      {(!noSkills || !baseJobs.length) && (
+      {(!noSkills || !result.scopeCount) && (
         <LayerPanel
-          jobs={baseJobs}
-          skills={profile.skills}
+          total={result.scopeCount}
+          values={result.layers.map(item => [item.layer, item.count])}
           selected={activeLayer}
-          choose={chooseLayer}
-          processing={processing}
+          choose={selectLayer}
+          processing={blocked}
         />
       )}
       {!noSkills && (
@@ -233,7 +134,7 @@ export default function Dashboard({ profile, update }) {
                 aria-selected={mode === value}
                 aria-controls="plan-view"
                 tabIndex={mode === value ? 0 : -1}
-                disabled={processing}
+                disabled={blocked}
                 onClick={() => switchTab(value)}
               >
                 {name}
@@ -243,7 +144,7 @@ export default function Dashboard({ profile, update }) {
           <button
             className="button recalculate"
             onClick={recalculate}
-            disabled={processing || !jobs.length}
+            disabled={blocked || !jobs.length}
           >
             {processing ? "Пересчёт выполняется…" : "Пересчитать план"}
           </button>
@@ -256,7 +157,8 @@ export default function Dashboard({ profile, update }) {
       )}
       {error && (
         <p className="notice" role="alert">
-          {error}
+          {error.message} Показан предыдущий результат.
+          <button className="button secondary" onClick={error.status === 409 ? reloadProfile : recalculate}>{error.status === 409 ? "Загрузить актуальный профиль" : "Повторить расчёт"}</button>
         </p>
       )}
       <div
@@ -266,7 +168,7 @@ export default function Dashboard({ profile, update }) {
       >
         <fieldset
           className={`plan-content${processing ? " processing" : ""}`}
-          disabled={processing}
+          disabled={blocked}
           aria-busy={processing}
         >
           {!jobs.length ? (
@@ -282,6 +184,7 @@ export default function Dashboard({ profile, update }) {
                 remaining={remaining}
                 profile={profile}
                 jobs={jobs}
+                metrics={result.basics}
                 toggle={toggle}
                 open={open}
               />
@@ -308,7 +211,7 @@ export default function Dashboard({ profile, update }) {
                         />
                         {skill}
                       </label>
-                      <TypeTag />
+                      <TypeTag type={metric(skill)?.category} />
                       <button className="text-link" onClick={() => open(skill)}>
                         Подробнее
                       </button>
@@ -332,8 +235,9 @@ export default function Dashboard({ profile, update }) {
                 steps={steps}
                 profile={profile}
                 jobs={jobs}
+                metrics={result.basics}
                 open={open}
-                processing={processing}
+                processing={blocked}
               />
               <aside className="plan-aside">
                 <section className="panel">
@@ -362,6 +266,7 @@ export default function Dashboard({ profile, update }) {
                 remaining={remaining}
                 profile={profile}
                 jobs={jobs}
+                metrics={result.basics}
                 toggle={toggle}
                 open={open}
               />
@@ -369,6 +274,7 @@ export default function Dashboard({ profile, update }) {
                 steps={steps}
                 profile={profile}
                 jobs={jobs}
+                metrics={result.basics}
                 toggle={toggle}
                 open={open}
               />
@@ -402,7 +308,7 @@ export default function Dashboard({ profile, update }) {
               .map((skill) => (
                 <button
                   key={skill}
-                  disabled={processing}
+                  disabled={blocked}
                   onClick={() => toggle(skill)}
                   aria-label={`Снять отметку ${skill}`}
                 >
@@ -424,7 +330,7 @@ export default function Dashboard({ profile, update }) {
     </section>
   );
 }
-function Basics({ remaining, profile, jobs, toggle, open }) {
+function Basics({ remaining, profile, jobs, metrics, toggle, open }) {
   return (
     <section className="basics">
       <h3>Базовые навыки · пока не изучены</h3>
@@ -441,9 +347,9 @@ function Basics({ remaining, profile, jobs, toggle, open }) {
                 {skill}
               </label>
               <div className="node-tags">
-                <TypeTag />
+                <TypeTag type={metrics.find(item => item.skill === skill)?.category} />
                 <span className="small">
-                  Вклад навыка: +{skillGain(jobs, profile.skills, skill)}
+                  Вклад навыка: +{metrics.find(item => item.skill === skill)?.gain || 0}
                 </span>
               </div>
               <button className="text-link" onClick={() => open(skill)}>
@@ -488,16 +394,11 @@ function PlanTable({ steps, profile, jobs, toggle, open }) {
             </div>
             <div className="table-types">
               {step.skills.map((skill) => (
-                <TypeTag key={skill} />
+                <TypeTag key={skill} type={step.metrics.find(item => item.skill === skill)?.category} />
               ))}
             </div>
-            <span>
-              <span className="mobile-field">Вклад навыка: </span>+{step.gain}
-            </span>
-            <span>
-              <span className="mobile-field">Прирост охвата: </span>+
-              {formatNumber(step.percentagePoints)} п.п.
-            </span>
+            <div>{step.metrics.map(item => <p key={item.skill}><span className="mobile-field">Вклад навыка: </span>+{item.gain}</p>)}</div>
+            <div>{step.metrics.map(item => <p key={item.skill}><span className="mobile-field">Прирост охвата: </span>+{formatNumber(item.points)} п.п.</p>)}</div>
             <div>
               {step.skills.map((skill) => (
                 <label className="checkbox-only" key={skill}>
@@ -517,13 +418,7 @@ function PlanTable({ steps, profile, jobs, toggle, open }) {
                   key={skill}
                   onClick={() => open(skill, step)}
                 >
-                  {vacancyText(
-                    basisJobs(
-                      jobs,
-                      skillContext(profile.skills, step, skill),
-                      skill,
-                    ).length,
-                  )}{" "}
+                  {vacancyText(step.metrics.find(item => item.skill === skill)?.gain || 0)}{" "}
                   ↗
                 </button>
               ))}
@@ -540,8 +435,7 @@ function PlanTable({ steps, profile, jobs, toggle, open }) {
   );
 }
 
-function LayerPanel({ jobs, skills, selected, choose, processing }) {
-  const values = layers(jobs, skills);
+function LayerPanel({ total, values, selected, choose, processing }) {
   return (
     <section
       className="panel layers plan-layer-filter"
@@ -572,7 +466,7 @@ function LayerPanel({ jobs, skills, selected, choose, processing }) {
               disabled={processing}
               onClick={() => choose(null)}
             >
-              Все · {jobs.length}
+              Все · {total}
             </button>
             {values.map(([value, count]) => (
               <button
@@ -588,7 +482,7 @@ function LayerPanel({ jobs, skills, selected, choose, processing }) {
           </div>
           <p className="small" aria-live="polite">
             {selected === null
-              ? `Все ${vacancyText(jobs.length)}. Показано слоёв: ${values.length}; число слоёв зависит от среза.`
+              ? `Все ${vacancyText(total)}. Показано слоёв: ${values.length}; число слоёв зависит от среза.`
               : `Выбран слой ${selected}: ${vacancyText(values.find(([value]) => value === selected)[1])}. План и показатели пересчитаны по этим вакансиям.`}
           </p>
         </>

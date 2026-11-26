@@ -5,7 +5,6 @@ import {
   getScope,
   coverage,
   skillGain,
-  buildPlan,
   layers,
   minimumDeficit,
   basicSkills,
@@ -20,6 +19,7 @@ import {
   directions,
 } from "../../src/data.js";
 import { readFileSync } from "node:fs";
+import { buildPlan } from "../helpers/legacy-calculator.js";
 
 test("Imported basic flags drive the profile and the recalculation input without inventing vacancies", () => {
   const original = JSON.parse(readFileSync(new URL("../../../backend/Services/SkillService/catalog.example.json", import.meta.url), "utf8"));

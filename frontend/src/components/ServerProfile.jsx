@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadProfile } from "../data";
 import { request } from "../auth";
-import Dashboard from "../pages/Dashboard";
+import ServerRoadmap from "./ServerRoadmap";
 import Profile from "../pages/Profile";
 
 const profileRequest = (path, body, options = {}) => request(path, body,
@@ -64,7 +64,7 @@ export default function ServerProfile({ user, route }) {
     {error && <section className="container profile-error notice" role="alert"><p>{error}</p><button className="button secondary" onClick={load}>Загрузить актуальный профиль</button></section>}
     {saving && <p role="status" className="container small">Сохраняем настройки…</p>}
     <fieldset className="server-profile-content" disabled={saving} aria-label="Персональные настройки" aria-busy={saving}>
-      {route === "plan" ? <Dashboard profile={{ ...profile, email: user.email }} update={update} />
+      {route === "plan" ? <ServerRoadmap profile={{ ...profile, email: user.email }} update={update} reloadProfile={load} />
         : <Profile profile={{ ...profile, email: user.email }} update={update} onDelete={() => { try { localStorage.removeItem(legacyKey); } catch {} }} />}
     </fieldset>
   </>;

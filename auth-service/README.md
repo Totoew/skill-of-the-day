@@ -27,7 +27,7 @@ docker compose up -d --build
 выполните `docker compose up -d auth-service`. Без Compose сервис по умолчанию
 требует подтверждение. Фронтенд читает текущую настройку через `/api/auth/config`.
 
-`compose.yaml` — окружение локальной разработки: HTTP на loopback, PostgreSQL без опубликованного порта и SMTP из `.env`. В нём восемь контейнеров: frontend, api-gateway, auth-service, profile-service, skill-service, auth-db, mailpit, aspire-dashboard. При выборе Gmail Mailpit остаётся доступным для тестов, но письма приложения в него не попадают. PostgreSQL и ключи подписи сохраняются в отдельных именованных volumes; остановка и обычная пересборка данные не удаляют. Не удаляйте volumes, если хотите сохранить учётные записи и действующие сессии.
+`compose.yaml` — окружение локальной разработки: HTTP на loopback, PostgreSQL без опубликованного порта и SMTP из `.env`. В нём девять контейнеров: frontend, api-gateway, auth-service, profile-service, skill-service, recommendation-service, auth-db, mailpit, aspire-dashboard. При выборе Gmail Mailpit остаётся доступным для тестов, но письма приложения в него не попадают. PostgreSQL и ключи подписи сохраняются в отдельных именованных volumes; остановка и обычная пересборка данные не удаляют. Не удаляйте volumes, если хотите сохранить учётные записи и действующие сессии.
 
 Auth Service отправляет структурированные журналы, HTTP-трассировки и метрики в
 Aspire Dashboard: http://127.0.0.1:18888. TraceId совпадает с запросом Gateway и

@@ -136,7 +136,7 @@ docker compose logs -f api-gateway
 curl http://127.0.0.1:8080/api/health/ready
 ```
 
-Данные вакансий и roadmap на фронтенде пока демонстрационные. Gateway сам
+Данные вакансий пока демонстрационные; личный roadmap рассчитывается в RecommendationService. Gateway сам
 их не создаёт. Чтобы подключить следующий сервис, добавьте его контейнер,
 маршрут и destination в `src/ApiGateway/appsettings.json`, согласуйте
 внешние пути, преобразование префиксов и авторизацию, затем проверьте контракт.
@@ -148,3 +148,13 @@ curl http://127.0.0.1:8080/api/health/ready
 с ролью Admin, которую проверяет SkillService через Auth. Swagger:
 http://127.0.0.1:8080/api/skills/swagger/index.html. Контракт JSON-импорта:
 [SkillService](../backend/Services/SkillService/README.md).
+
+## RecommendationService
+
+`/api/recommendations/*` направляется в RecommendationService с удалением `/api`
+один раз. GET `/plan` и POST `/recalculate` требуют действующей сессии своего
+пользователя. Поддерживаются query-параметры `profileVersion` и `layer`.
+Swagger: http://127.0.0.1:8080/api/recommendations/swagger/index.html.
+Сервис использует ProfileService и SkillService, а локально — явно помеченный
+демонстрационный срез вакансий. Настоящий VacancyService к этому контракту
+пока не подключён. Подробности: [RecommendationService](../backend/Services/RecommendationService/README.md).

@@ -58,6 +58,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkillService.Application", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkillService.Domain", "Services\SkillService\SkillService.Domain\SkillService.Domain.csproj", "{487E4395-1047-433C-A39D-E6D22D62BF39}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecommendationService.Api", "Services\RecommendationService\RecommendationService.Api\RecommendationService.Api.csproj", "{31C800D2-8A79-44E0-92C4-21339DE08E81}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecommendationService.Application", "Services\RecommendationService\RecommendationService.Application\RecommendationService.Application.csproj", "{EC69CF79-D1D7-4CB3-9913-36A4E9010673}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecommendationService.Domain", "Services\RecommendationService\RecommendationService.Domain\RecommendationService.Domain.csproj", "{7922A420-9F58-4460-B0DA-3CAE1FC20E88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecommendationService.Infrastructure", "Services\RecommendationService\RecommendationService.Infrastructure\RecommendationService.Infrastructure.csproj", "{47E20C03-1154-40C2-9491-E630F1CA0572}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +98,10 @@ Global
 		{AA7A2327-0917-4134-9FBA-B3102485944E} = {587E2858-6C35-4BB1-8E7C-3799567C5B94}
 		{659DB43F-6134-4BC6-957F-0EC65ADE111B} = {587E2858-6C35-4BB1-8E7C-3799567C5B94}
 		{487E4395-1047-433C-A39D-E6D22D62BF39} = {587E2858-6C35-4BB1-8E7C-3799567C5B94}
+		{31C800D2-8A79-44E0-92C4-21339DE08E81} = {F6627A59-3306-452E-A735-58E9CA62B0FE}
+		{EC69CF79-D1D7-4CB3-9913-36A4E9010673} = {F6627A59-3306-452E-A735-58E9CA62B0FE}
+		{7922A420-9F58-4460-B0DA-3CAE1FC20E88} = {F6627A59-3306-452E-A735-58E9CA62B0FE}
+		{47E20C03-1154-40C2-9491-E630F1CA0572} = {F6627A59-3306-452E-A735-58E9CA62B0FE}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C13BEE16-76A4-439C-AAD8-EE19ACE7ADCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -172,5 +184,21 @@ Global
 		{487E4395-1047-433C-A39D-E6D22D62BF39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{487E4395-1047-433C-A39D-E6D22D62BF39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{487E4395-1047-433C-A39D-E6D22D62BF39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31C800D2-8A79-44E0-92C4-21339DE08E81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31C800D2-8A79-44E0-92C4-21339DE08E81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31C800D2-8A79-44E0-92C4-21339DE08E81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31C800D2-8A79-44E0-92C4-21339DE08E81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC69CF79-D1D7-4CB3-9913-36A4E9010673}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC69CF79-D1D7-4CB3-9913-36A4E9010673}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC69CF79-D1D7-4CB3-9913-36A4E9010673}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC69CF79-D1D7-4CB3-9913-36A4E9010673}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7922A420-9F58-4460-B0DA-3CAE1FC20E88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7922A420-9F58-4460-B0DA-3CAE1FC20E88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7922A420-9F58-4460-B0DA-3CAE1FC20E88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7922A420-9F58-4460-B0DA-3CAE1FC20E88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47E20C03-1154-40C2-9491-E630F1CA0572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47E20C03-1154-40C2-9491-E630F1CA0572}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47E20C03-1154-40C2-9491-E630F1CA0572}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47E20C03-1154-40C2-9491-E630F1CA0572}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

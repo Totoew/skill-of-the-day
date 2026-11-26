@@ -30,9 +30,9 @@ async function responseBody(response) {
 export async function request(
   path,
   body,
-  { method = "POST", authenticated = false, retry = true, service = "auth" } = {},
+  { method = "POST", authenticated = false, retry = true, service = "auth", signal } = {},
 ) {
-  const services = { auth: "auth", profile: "profile", skills: "skills" };
+  const services = { auth: "auth", profile: "profile", skills: "skills", recommendations: "recommendations" };
   if (!Object.hasOwn(services, service)) throw new Error("Неизвестный API-сервис.");
   const headers = {
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
@@ -44,10 +44,12 @@ export async function request(
       method,
       headers,
       credentials: "same-origin",
+      signal,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
-  } catch {
-    throw new Error(service === "skills" ? "Справочник навыков недоступен. Повторите попытку позже." : service === "profile" ? "Сервис профиля недоступен. Повторите попытку позже." : "Сервис авторизации недоступен. Повторите попытку позже.");
+  } catch (failure) {
+    if (failure.name === "AbortError") throw failure;
+    throw new Error(service === "recommendations" ? "Сервис рекомендаций недоступен. Повторите попытку позже." : service === "skills" ? "Справочник навыков недоступен. Повторите попытку позже." : service === "profile" ? "Сервис профиля недоступен. Повторите попытку позже." : "Сервис авторизации недоступен. Повторите попытку позже.");
   }
   if (response.status === 401 && authenticated && retry) {
     try {
@@ -56,7 +58,7 @@ export async function request(
       clearSession();
       throw new Error("Сессия завершена. Войдите снова.");
     }
-    return request(path, body, { method, authenticated, retry: false, service });
+    return request(path, body, { method, authenticated, retry: false, service, signal });
   }
   const data = await responseBody(response);
   if (!response.ok) {

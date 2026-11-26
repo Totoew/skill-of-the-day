@@ -33,11 +33,11 @@
 
 ## Статус проекта
 
-**Стадия:** разработка фронтенда, сервисов авторизации, профиля и навыков, API Gateway.
+**Стадия:** разработка фронтенда, сервисов авторизации, профиля, навыков и рекомендаций, API Gateway.
 
 ## Документация
 
-Фронтенд на React перенесён на последние согласованные макеты: лендинг, статистика, формы, интерактивный графический roadmap с табличным видом, профиль и админпанель. Он работает отдельным Docker-сервисом с Nginx. Все `/api/*` направляются через отдельный API Gateway на ASP.NET Core + YARP. Через него регистрация, вход и управление аккаунтом подключены к Auth Service, а направление, уровень, регионы и изученные навыки сохраняются в PostgreSQL через ProfileService. Данные вакансий и расчёт roadmap пока демонстрационные. Интервал обновления срезов — пять дней.
+Фронтенд на React перенесён на последние согласованные макеты: лендинг, статистика, формы, интерактивный графический roadmap с табличным видом, профиль и админпанель. Он работает отдельным Docker-сервисом с Nginx. Все `/api/*` направляются через отдельный API Gateway на ASP.NET Core + YARP. Через него регистрация, вход и управление аккаунтом подключены к Auth Service, а направление, уровень, регионы и изученные навыки сохраняются в PostgreSQL через ProfileService. Личный roadmap, охват, слои и основания рассчитывает RecommendationService; вакансии пока демонстрационные. Интервал обновления срезов — пять дней.
 
 Из корня репозитория:
 
@@ -47,14 +47,19 @@ docker compose up -d --build
 
 Интерфейс: http://127.0.0.1:8080. В локальном Compose после регистрации можно сразу войти: `AUTH_REQUIRE_CONFIRMED_EMAIL=false`. Восстановление пароля и смена email используют локальный Mailpit: http://127.0.0.1:8025. Внешняя доставка почты не подключена.
 
-Compose запускает восемь контейнеров, включая SkillService со справочником навыков и JSON-импортом в админке. Swagger профиля: http://127.0.0.1:8080/api/profile/swagger/index.html. Контракт и миграции — в [ProfileService/README.md](backend/Services/ProfileService/README.md).
+Compose запускает девять контейнеров, включая SkillService со справочником навыков и JSON-импортом в админке. Swagger профиля: http://127.0.0.1:8080/api/profile/swagger/index.html. Контракт и миграции — в [ProfileService/README.md](backend/Services/ProfileService/README.md).
 
 Импорт справочника: http://127.0.0.1:8080/#/admin (роль Admin). Формат файла, пример и контракт — в [SkillService/README.md](backend/Services/SkillService/README.md).
 
-Журналы, трассировки и HTTP-метрики Gateway, Auth Service, ProfileService и SkillService доступны в Aspire Dashboard: http://127.0.0.1:18888. Один TraceId связывает запрос через сервисы. Инструкция показа и проверка — в [observability/README.md](observability/README.md).
+Журналы, трассировки и HTTP-метрики Gateway, Auth Service, ProfileService, SkillService и RecommendationService доступны в Aspire Dashboard: http://127.0.0.1:18888. Один TraceId связывает запрос через сервисы. Инструкция показа и проверка — в [observability/README.md](observability/README.md).
 
 Маршруты и проверки шлюза — в [api-gateway/README.md](api-gateway/README.md). Контракт Auth API, миграции, настройка почты и администратора — в [auth-service/README.md](auth-service/README.md). Разработка интерфейса — в [frontend/README.md](frontend/README.md).
 
 Полная документация проекта лежит в папке на Google Диске:
 
 [Ссылка на папку с документацией](https://drive.google.com/drive/folders/1ob4_I4nt-1lzRAL3TFM3AjPwggl20P5e?usp=sharing)
+
+Личный план подключён к [RecommendationService](backend/Services/RecommendationService/README.md).
+Swagger: http://127.0.0.1:8080/api/recommendations/swagger/index.html.
+Профиль и навыки настоящие; локальный источник вакансий явно помечен Demo.
+Подключение к реальным распознанным требованиям VacancyService ещё предстоит.

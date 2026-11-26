@@ -2,23 +2,20 @@ import React, {
   useEffect,
   useId,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  basisJobs,
-  coverage,
   formatNumber,
   percent,
-  skillContext,
   vacancyText,
 } from "../data";
 import { TypeTag } from "./UI";
 
 export default function SkillNode({
   skill,
+  metric,
   step,
   jobs,
   profile,
@@ -33,17 +30,7 @@ export default function SkillNode({
     timer = useRef(null),
     touch = useRef(false);
   const id = useId();
-  const info = useMemo(() => {
-    const context = skillContext(profile.skills, step, skill);
-    const before = coverage(jobs, context),
-      after = coverage(jobs, [...context, skill]);
-    return {
-      before,
-      after,
-      gain: basisJobs(jobs, context, skill).length,
-      points: jobs.length ? ((after - before) / jobs.length) * 100 : 0,
-    };
-  }, [jobs, profile.skills, step, skill]);
+  const info = metric;
   function hide() {
     setVisible(false);
     setTouchHintOpen(false);
@@ -157,7 +144,7 @@ export default function SkillNode({
             onPointerLeave={hideSoon}
           >
             <strong className="tooltip-skill-name">{skill}</strong>
-            <TypeTag />
+            <TypeTag type={info.category} />
             <p>
               Вклад навыка:{" "}
               <strong>

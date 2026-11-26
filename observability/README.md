@@ -1,6 +1,6 @@
 # Aspire Dashboard — журналы и трассировки
 
-Локальная панель получает OpenTelemetry от `api-gateway`, `auth-service`, `profile-service` и `skill-service`:
+Локальная панель получает OpenTelemetry от `api-gateway`, `auth-service`, `profile-service`, `skill-service` и `recommendation-service`:
 структурированные журналы HTTP-запросов, распределённые трассировки и HTTP-метрики.
 Сервисы по-прежнему запускаются Docker Compose; отдельный Aspire AppHost не нужен.
 
@@ -61,12 +61,12 @@ http://127.0.0.1:18888/traces/detail/<TraceId>
 ## Настройка и границы
 
 При сохранении профиля на сайте появляется `PUT /api/profile/me`. Его трассировка
-содержит три ресурса: `api-gateway`, `profile-service`, `auth-service` — последний
+содержит ресурсы `api-gateway`, `profile-service`, `skill-service` и `auth-service` — последний
 проверяет действующую сессию через `/auth/me`. Внутренняя очистка после удаления
 аккаунта идёт отдельной трассировкой из фонового worker Auth.
 
 Общая библиотека [ServiceDefaults](ServiceDefaults/TelemetryExtensions.cs) подключена
-ко всем трём .NET-сервисам. Она экспортирует OTLP/gRPC на `aspire-dashboard:18889`.
+ко всем пяти .NET-сервисам. Она экспортирует OTLP/gRPC на `aspire-dashboard:18889`.
 Журналы и трассировки отправляются пакетами примерно раз в 0,5 секунды, метрики —
 раз в 5 секунд. Если `OTEL_EXPORTER_OTLP_ENDPOINT` не задан, остаются JSON-журналы
 консоли без отправки в панель. Образы сервисов собираются с контекстом из корня
@@ -103,3 +103,8 @@ node --test observability/tests/telemetry.test.mjs
 Gateway → SkillService → Auth (проверка роли). PUT профиля дополнительно обращается
 из ProfileService в SkillService за допустимыми навыками. Содержимое JSON-файла
 в HTTP-логи не записывается; история импорта хранится в `skill.catalog_imports`.
+
+`GET /api/recommendations/plan` связывает пять сервисов: Gateway, Recommendation,
+Profile, Skill и Auth. Для показа откройте личный кабинет, смените слой либо
+нажмите «Пересчитать план», затем найдите запрос по `X-Trace-ID`. JSON с результатом
+виден в DevTools → Network → Response; содержимое не записывается в HTTP-логи.

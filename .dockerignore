@@ -14,6 +14,8 @@
 !backend/Services/ProfileService/**
 !backend/Services/SkillService/
 !backend/Services/SkillService/**
+!backend/Services/RecommendationService/
+!backend/Services/RecommendationService/**
 !observability/
 !observability/ServiceDefaults/
 !observability/ServiceDefaults/**

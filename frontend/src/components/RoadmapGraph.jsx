@@ -6,6 +6,7 @@ export default function RoadmapGraph({
   steps,
   profile,
   jobs,
+  metrics,
   open,
   processing,
 }) {
@@ -39,6 +40,7 @@ export default function RoadmapGraph({
               <SkillNode
                 key={skill}
                 skill={skill}
+                metric={metrics.find(item => item.skill === skill)}
                 jobs={jobs}
                 profile={profile}
                 open={open}
@@ -91,6 +93,7 @@ export default function RoadmapGraph({
                     <SkillNode
                       key={skill}
                       skill={skill}
+                      metric={step.metrics.find(item => item.skill === skill)}
                       step={step}
                       profile={profile}
                       jobs={jobs}

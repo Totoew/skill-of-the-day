@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { demoProfile, seedProfile } from "../src/data.js";
+import { demoProfile, seedProfile, basicSkills } from "../src/data.js";
+import { planFixture } from "./helpers/recommendations.js";
 import { readFileSync } from "node:fs";
 const catalogFixture = JSON.parse(readFileSync(new URL("../../backend/Services/SkillService/catalog.example.json", import.meta.url), "utf8"));
 
@@ -9,6 +10,13 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/skills/catalog", route => route.fulfill({ status: 200, json: { ...catalogFixture, version: 1 } }));
   const state = { profile: null };
   serverProfiles.set(page, state);
+  await page.route("**/api/recommendations/**", route => {
+    const params = new URL(route.request().url()).searchParams;
+    const layer = params.has("layer") ? Number(params.get("layer")) : null;
+    if (params.has("profileVersion") && Number(params.get("profileVersion")) !== (state.profile?.version || 0))
+      return route.fulfill({ status: 409, json: { title: "Профиль изменён на другом устройстве. Загрузите актуальный профиль и повторите расчёт." } });
+    return route.fulfill({ status: 200, json: planFixture(state.profile || seedProfile, catalogFixture, layer, state.jobs) });
+  });
   await page.route("**/api/profile/**", async (route) => {
     if (route.request().method() === "PUT") {
       const value = route.request().postDataJSON();
@@ -74,6 +82,46 @@ test("Catalog import rejects invalid roots and oversized files before sending th
   await expect(panel.getByRole("button", { name: "Импортировать справочник" })).toHaveCount(0);
 });
 
+test("An unavailable recommendation service shows a retry without substituting a local roadmap", async ({ page }) => {
+  let failed = true;
+  await page.route("**/api/recommendations/**", route => failed
+    ? route.fulfill({ status: 503, json: { title: "Источник вакансий временно недоступен." } }) : route.fallback());
+  await partialProfile(page);
+  await page.goto("/#/plan");
+  await expect(page.getByRole("alert")).toContainText("Источник вакансий временно недоступен");
+  await expect(page.locator(".roadmap-step")).toHaveCount(0);
+  failed = false;
+  await page.getByRole("button", { name: "Повторить расчёт", exact: true }).click();
+  await expect(page.locator(".metrics")).toContainText("Охват · 24 из 120");
+});
+
+test("A failed recalculation preserves the labelled previous result and can be retried", async ({ page }) => {
+  let failed = true;
+  await page.route("**/api/recommendations/recalculate**", route => failed
+    ? route.fulfill({ status: 503, json: { title: "Источник вакансий временно недоступен." } }) : route.fallback());
+  await partialProfile(page); await page.goto("/#/plan");
+  await page.getByRole("button", { name: "Пересчитать план", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Показан предыдущий результат");
+  await expect(page.locator(".metrics")).toContainText("Охват · 24 из 120");
+  await expect(page.locator(".plan-content")).toHaveAttribute("disabled", "");
+  await expect(page.locator(".roadmap-step button").first()).toBeDisabled();
+  failed = false;
+  await page.getByRole("button", { name: "Повторить расчёт", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Пересчитать план", exact: true })).toBeEnabled();
+});
+
+test("A changed server profile must be reloaded before recalculation", async ({ page }) => {
+  await partialProfile(page); await page.goto("/#/plan");
+  await expect(page.locator(".metrics")).toContainText("Охват · 24 из 120");
+  const state = serverProfiles.get(page);
+  state.profile = { ...state.profile, version: 2, skills: [...state.profile.skills, "SQL", "REST API", "Git"] };
+  await page.getByRole("button", { name: "Пересчитать план", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Профиль изменён на другом устройстве");
+  await page.getByRole("button", { name: "Загрузить актуальный профиль", exact: true }).click();
+  await expect(page.locator(".metrics")).toContainText("Охват · 96 из 120");
+});
+
 test("Deficit selection recalculates both views and evidence; tabs remain next to data", async ({
   page,
 }) => {
@@ -119,6 +167,21 @@ test("Deficit selection recalculates both views and evidence; tabs remain next t
   ).toHaveAttribute("aria-selected", "true");
 });
 
+test("A disappeared layer resets to All and stays there when the layer reappears", async ({ page }) => {
+  await partialProfile(page); await page.goto("/#/plan");
+  await page.getByRole("button", { name: "Слой 4 · 2", exact: true }).click();
+  await expect(page.locator(".metrics")).toContainText("из 2");
+  await page.getByRole("button", { name: "SQL", exact: true }).click();
+  await page.getByRole("dialog").getByLabel("Отметить навык изученным").click();
+  await expect(page.getByRole("dialog").getByLabel("Отметить навык изученным")).toBeChecked();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Все · 120", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Снять отметку SQL", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Слой 4 · 2", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Все · 120", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".metrics")).toContainText("Охват · 24 из 120");
+});
+
 test("Level filters landing statistics, market and saved profile; mentioned counts are labelled correctly", async ({
   page,
 }) => {
@@ -157,11 +220,9 @@ test("Level filters landing statistics, market and saved profile; mentioned coun
 test("Twenty skills remain name-only and fit a bounded responsive graph", async ({
   page,
 }) => {
-  await page.route(/\/src\/data\.js(?:\?|$)/, async (route) => {
-    const response = await route.fetch();
-    const stress = `\nconst stressSkills=Array.from({length:20},(_,i)=>'Навык '+(i+1));directions.analyst.skills.push(...stressSkills);datasets.analyst=stressSkills.map((_,i)=>({id:'stress-'+i,title:'Тестовая вакансия',region:'Москва',remote:false,level:'junior',required:[...basicSkills.analyst,...stressSkills.slice(0,i+1)],desired:[],mentioned:[],rawMentions:[],structureRecognized:true,url:null}));`;
-    await route.fulfill({ response, body: (await response.text()) + stress });
-  });
+  const stressSkills = Array.from({ length: 20 }, (_, i) => "Навык " + (i + 1));
+  serverProfiles.get(page).jobs = stressSkills.map((_, i) => ({ id: "stress-" + i, title: "Тестовая вакансия", region: "Москва", remote: false,
+    level: "junior", required: [...basicSkills.analyst, ...stressSkills.slice(0, i + 1)], desired: [], mentioned: [], url: null }));
   await partialProfile(page);
   await page.goto("/#/plan");
   await expect(page.locator(".roadmap-step")).toHaveCount(20);
@@ -378,7 +439,7 @@ test("Graph, table and selected skill share the same forecast; learned markers r
   await expect(page.locator(".plan-table-row").first()).toContainText("BPMN");
 });
 
-test("Manual recalculation uses the worker and finishes without changing the forecast", async ({
+test("Manual recalculation uses the service and finishes without changing the forecast", async ({
   page,
 }) => {
   await partialProfile(page);
@@ -387,11 +448,11 @@ test("Manual recalculation uses the worker and finishes without changing the for
   const gate = new Promise((resolve) => {
     release = resolve;
   });
-  await page.route(/\/plan\.worker[^/]*\.js(?:\?|$)/, async (route) => {
+  await page.route("**/api/recommendations/recalculate**", async (route) => {
     await gate;
-    await route.continue();
+    await route.fallback();
   });
-  const workerRequest = page.waitForEvent("worker");
+  const serverRequest = page.waitForRequest(request => request.url().includes("/api/recommendations/recalculate"));
   await page
     .getByRole("button", { name: "Пересчитать план", exact: true })
     .click();
@@ -404,7 +465,7 @@ test("Manual recalculation uses the worker and finishes without changing the for
     await expect(page.locator(".roadmap-step").first()).toHaveText("Git");
   } finally {
     release();
-    await workerRequest;
+    await serverRequest;
   }
   await expect(
     page.getByRole("button", { name: "Пересчитать план", exact: true }),

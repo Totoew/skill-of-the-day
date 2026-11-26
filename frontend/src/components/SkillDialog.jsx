@@ -1,10 +1,7 @@
 import React from "react";
 import { Modal, TypeTag } from "./UI";
 import {
-  coverage,
   percent,
-  skillContext,
-  basisJobs,
   safeExternalUrl,
   vacancyText,
 } from "../data";
@@ -16,17 +13,15 @@ export default function SkillDialog({
   toggle,
   close,
 }) {
-  const { skill, step } = selection;
-  const context =
-    selection.context || skillContext(profile.skills, step, skill);
-  const before = coverage(jobs, context),
-    after = coverage(jobs, [...context, skill]);
-  const basis = basisJobs(jobs, context, skill);
+  const { skill, step, metric } = selection;
+  const { before, after } = metric;
+  const ids = new Set(metric.basisIds);
+  const basis = jobs.filter(job => ids.has(job.id));
   return (
     <Modal title="Навык в вашем плане" close={close} className="skill-dialog">
       <h3 className="selected-skill-name">{skill}</h3>
       <div className="skill-classification">
-        <TypeTag />
+        <TypeTag type={metric.category} />
         <span>
           Вклад навыка: +{basis.length}{" "}
           {vacancyText(basis.length).split(" ").slice(1).join(" ")}
@@ -68,7 +63,7 @@ export default function SkillDialog({
                       Открыть ↗
                     </a>
                   ) : (
-                    <span className="small muted">{job.id} · демо</span>
+                    <span className="small muted">{job.id}{selection.source === "demo" ? " · демо" : " · ссылка недоступна"}</span>
                   )}
                 </div>
                 <p className="small">Обязательные навыки вакансии</p>
@@ -107,8 +102,7 @@ export default function SkillDialog({
           )}
         </div>
         <p className="small muted">
-          {vacancyText(basis.length)}. В демонстрационных данных внешних ссылок
-          нет.
+          {vacancyText(basis.length)}.{selection.source === "demo" ? " В демонстрационных данных внешних ссылок нет." : ""}
         </p>
       </section>
     </Modal>

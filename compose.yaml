@@ -22,6 +22,7 @@ services:
       ReverseProxy__Clusters__auth__Destinations__primary__Address: http://auth-service:8080/
       ReverseProxy__Clusters__profile__Destinations__primary__Address: http://profile-service:8080/
       ReverseProxy__Clusters__skills__Destinations__primary__Address: http://skill-service:8080/
+      ReverseProxy__Clusters__recommendations__Destinations__primary__Address: http://recommendation-service:8080/
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_BSP_SCHEDULE_DELAY: "500"
@@ -35,6 +36,8 @@ services:
       profile-service:
         condition: service_healthy
       skill-service:
+        condition: service_healthy
+      recommendation-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -123,6 +126,32 @@ services:
       auth-db:
         condition: service_healthy
       auth-service:
+        condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
+    restart: unless-stopped
+
+  recommendation-service:
+    build:
+      context: .
+      dockerfile: backend/Services/RecommendationService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Auth__Address: http://auth-service:8080/
+      Profile__Address: http://profile-service:8080/
+      Skills__Address: http://skill-service:8080/
+      Vacancies__Provider: Demo
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_BSP_SCHEDULE_DELAY: "500"
+      OTEL_BLRP_SCHEDULE_DELAY: "500"
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      skill-service:
         condition: service_healthy
       aspire-dashboard:
         condition: service_started

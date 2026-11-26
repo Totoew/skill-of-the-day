@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../RecommendationService.Application/RecommendationService.Application.csproj" />
+</ItemGroup>
+  <ItemGroup><FrameworkReference Include="Microsoft.AspNetCore.App" /><EmbeddedResource Include="Fixtures/vacancies.demo.json" LogicalName="vacancies.demo.json" /></ItemGroup>
+</Project>
