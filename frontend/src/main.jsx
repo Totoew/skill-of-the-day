@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { loadProfile, UPDATE_INTERVAL_DAYS } from "./data";
+import { UPDATE_INTERVAL_DAYS } from "./data";
 import { Link } from "./components/UI";
 import { AuthProvider, RequireAuth, useAuth } from "./components/AuthProvider";
 import { Landing, Market, Auth } from "./pages/PublicPages";
 import AuthAction from "./pages/AuthAction";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
+import ServerProfile from "./components/ServerProfile";
 import Admin from "./pages/Admin";
+import CatalogProvider, { useCatalog } from "./components/CatalogProvider";
 import "./styles.css";
 
 function routeFromLocation() {
@@ -17,28 +17,10 @@ function routeFromLocation() {
 }
 function UserPages({ route }) {
   const { user } = useAuth();
-  const storageKey = `skill-day-profile:${user.id}`;
-  const [stored, setStored] = useState(() => loadProfile(storageKey));
-  const profile = { ...stored, email: user.email };
-  function update(next) {
-    const saved = { ...next, email: user.email };
-    setStored(saved);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(saved));
-    } catch {}
-  }
-  function removeLocal() {
-    try {
-      localStorage.removeItem(storageKey);
-    } catch {}
-  }
-  return route === "plan" ? (
-    <Dashboard profile={profile} update={update} />
-  ) : (
-    <Profile profile={profile} update={update} onDelete={removeLocal} />
-  );
+  return <ServerProfile user={user} route={route} />;
 }
 function App() {
+  useCatalog(); // Re-render screens after an administrator import.
   const { user, loading, logout } = useAuth();
   const [route, setRoute] = useState(routeFromLocation),
     [menu, setMenu] = useState(false),
@@ -192,6 +174,6 @@ function App() {
 }
 createRoot(document.getElementById("root")).render(
   <AuthProvider>
-    <App />
+    <CatalogProvider><App /></CatalogProvider>
   </AuthProvider>,
 );

@@ -1,4 +1,4 @@
-# The two .NET images share ServiceDefaults. Send only their source trees.
+# .NET images share ServiceDefaults; keep credentials and build output out.
 **
 !global.json
 !api-gateway/
@@ -7,6 +7,13 @@
 !auth-service/
 !auth-service/src/
 !auth-service/src/**
+!backend/
+!backend/Directory.Packages.props
+!backend/Services/
+!backend/Services/ProfileService/
+!backend/Services/ProfileService/**
+!backend/Services/SkillService/
+!backend/Services/SkillService/**
 !observability/
 !observability/ServiceDefaults/
 !observability/ServiceDefaults/**

@@ -20,6 +20,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ReverseProxy__Clusters__auth__Destinations__primary__Address: http://auth-service:8080/
+      ReverseProxy__Clusters__profile__Destinations__primary__Address: http://profile-service:8080/
+      ReverseProxy__Clusters__skills__Destinations__primary__Address: http://skill-service:8080/
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_BSP_SCHEDULE_DELAY: "500"
@@ -29,6 +31,10 @@ services:
       aspire-dashboard:
         condition: service_started
       auth-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      skill-service:
         condition: service_healthy
     restart: unless-stopped
 
@@ -44,6 +50,8 @@ services:
       Auth__AllowedOrigins__0: http://127.0.0.1:5173
       Auth__AutoMigrate: "true"
       Auth__RequireConfirmedEmail: ${AUTH_REQUIRE_CONFIRMED_EMAIL:-false}
+      ProfileCleanup__Address: http://profile-service:8080/
+      ProfileCleanup__Key: ${PROFILE_SERVICE_KEY:-local-development-only}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_BSP_SCHEDULE_DELAY: "500"
@@ -66,6 +74,57 @@ services:
       auth-db:
         condition: service_healthy
       mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: backend/Services/ProfileService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__ProfileDb: Host=auth-db;Database=skill_day_auth;Username=auth
+      Database__Password: ${AUTH_DB_PASSWORD:-local-development-only}
+      Profile__AutoMigrate: "true"
+      Auth__Address: http://auth-service:8080/
+      Internal__Key: ${PROFILE_SERVICE_KEY:-local-development-only}
+      Skills__Address: http://skill-service:8080/
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_BSP_SCHEDULE_DELAY: "500"
+      OTEL_BLRP_SCHEDULE_DELAY: "500"
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      aspire-dashboard:
+        condition: service_started
+    restart: unless-stopped
+
+  skill-service:
+    build:
+      context: .
+      dockerfile: backend/Services/SkillService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SkillDb: Host=auth-db;Database=skill_day_auth;Username=auth
+      Database__Password: ${AUTH_DB_PASSWORD:-local-development-only}
+      Skill__AutoMigrate: "true"
+      Skill__SeedDemoCatalog: "true"
+      Auth__Address: http://auth-service:8080/
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://aspire-dashboard:18889
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_BSP_SCHEDULE_DELAY: "500"
+      OTEL_BLRP_SCHEDULE_DELAY: "500"
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      aspire-dashboard:
         condition: service_started
     restart: unless-stopped
 

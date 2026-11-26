@@ -2436,3 +2436,16 @@ input[type="checkbox"] {
   flex-wrap: wrap;
   margin-top: 24px;
 }
+/* Native disabling prevents duplicate writes while the profile is being saved. */
+.server-profile-content { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+.profile-error { margin-top: 24px; }
+
+.catalog-import { margin: 24px 0; }
+.catalog-import-controls { border: 0; padding: 0; margin: 0; min-inline-size: 0; }
+.catalog-import-controls > label { display: grid; gap: 8px; margin: 20px 0 12px; }
+.catalog-import-controls .actions { flex-wrap: wrap; }
+.catalog-import input[type="file"] { max-width: 100%; padding: 12px; }
+.catalog-import .notice { margin-top: 16px; }
+.catalog-preview details { margin: 12px 0; }
+.catalog-preview ul { max-height: 240px; overflow: auto; }
+.catalog-file-name, .catalog-import [role="alert"] { overflow-wrap: anywhere; }

@@ -7,6 +7,7 @@
     </PropertyGroup>
     
     <ItemGroup>
+        <ProjectReference Include="../ProfileService.Application/ProfileService.Application.csproj" />
         <PackageReference Include="Dapper" />
         <PackageReference Include="FluentMigrator" />
         <PackageReference Include="FluentMigrator.Runner.Postgres" />

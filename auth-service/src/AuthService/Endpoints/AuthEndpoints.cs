@@ -203,8 +203,12 @@ public static class AuthEndpoints
         if (request.CurrentPassword is not { Length: > 0 and <= 128 }) return Error("InvalidPassword", "Введите текущий пароль.");
         var user = (await users.FindByIdAsync(UserId(http).ToString()))!;
         if (!await users.CheckPasswordAsync(user, request.CurrentPassword)) return Error("InvalidPassword", "Текущий пароль неверен.");
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        db.AccountDeletions.Add(new AccountDeletion { UserId = user.Id });
         var result = await users.DeleteAsync(user);
         if (!result.Succeeded) return IdentityError(result);
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
         SessionService.ClearCookie(http);
         return Results.NoContent();
     }

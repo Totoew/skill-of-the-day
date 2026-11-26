@@ -9,7 +9,7 @@ export const levels = {
   middle: "Middle",
   senior: "Senior",
 };
-export const directions = {
+export let directions = {
   analyst: {
     name: "Системный анализ",
     short: "Системный аналитик",
@@ -62,12 +62,26 @@ export const regions = [
   "Екатеринбург",
   "Владивосток",
 ];
-export const basicSkills = Object.fromEntries(
+export let basicSkills = Object.fromEntries(
   Object.entries(directions).map(([key, value]) => [
     key,
     value.skills.slice(0, 5),
   ]),
 );
+// Live bindings keep UI and calculations on the same server catalogue.
+// Importing a skill does not invent vacancies: the dataset below remains a demo.
+export function applySkillCatalog(catalog) {
+  if (catalog?.schemaVersion !== 1 || !Array.isArray(catalog.skills))
+    throw new Error("Некорректный ответ справочника навыков.");
+  const next = {}, bases = {};
+  for (const [code, direction] of Object.entries(directions)) {
+    const skills = catalog.skills.filter((skill) => skill.directions?.includes(code));
+    next[code] = { ...direction, skills: skills.map((skill) => skill.name) };
+    bases[code] = skills.filter((skill) => skill.basicFor?.includes(code)).map((skill) => skill.name);
+  }
+  directions = next;
+  basicSkills = bases;
+}
 export const seedProfile = {
   direction: "analyst",
   level: "all",
@@ -225,8 +239,8 @@ export function skillCategory(jobs, skill) {
 }
 // Bases stay above the specialised steps. The plan is not capped at three skills.
 // Each specialised step is evaluated after the missing bases and previous steps.
-export function buildPlan(jobs, skills, direction = "analyst") {
-  let context = [...new Set([...skills, ...basicSkills[direction]])];
+export function buildPlan(jobs, skills, direction = "analyst", bases = basicSkills[direction]) {
+  let context = [...new Set([...skills, ...bases])];
   const steps = [];
   const limit = new Set(jobs.flatMap((job) => job.required)).size;
   for (let index = 0; index < limit; index++) {

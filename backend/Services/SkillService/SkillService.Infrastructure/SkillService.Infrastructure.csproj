@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="../SkillService.Application/SkillService.Application.csproj" />
       <PackageReference Include="Dapper" />
       <PackageReference Include="FluentMigrator" />
       <PackageReference Include="FluentMigrator.Runner.Postgres" />

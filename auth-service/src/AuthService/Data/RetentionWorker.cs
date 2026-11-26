@@ -15,6 +15,7 @@ public sealed class RetentionWorker(IServiceScopeFactory scopes, ILogger<Retenti
                 var now = DateTimeOffset.UtcNow;
                 await db.Sessions.Where(x => x.ExpiresAt < now.AddDays(-1)).ExecuteDeleteAsync(stoppingToken);
                 await db.OutgoingMails.Where(x => x.CreatedAt < now.AddDays(-2)).ExecuteDeleteAsync(stoppingToken);
+                await db.AccountDeletions.Where(x => x.CompletedAt != null && x.CompletedAt < now.AddDays(-7)).ExecuteDeleteAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException) { logger.LogWarning("Auth retention unavailable ({Type})", ex.GetType().Name); }
             try { await Task.Delay(TimeSpan.FromHours(6), stoppingToken); }

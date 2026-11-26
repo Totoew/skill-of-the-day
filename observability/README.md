@@ -1,6 +1,6 @@
 # Aspire Dashboard — журналы и трассировки
 
-Локальная панель получает OpenTelemetry от `api-gateway` и `auth-service`:
+Локальная панель получает OpenTelemetry от `api-gateway`, `auth-service`, `profile-service` и `skill-service`:
 структурированные журналы HTTP-запросов, распределённые трассировки и HTTP-метрики.
 Сервисы по-прежнему запускаются Docker Compose; отдельный Aspire AppHost не нужен.
 
@@ -60,8 +60,13 @@ http://127.0.0.1:18888/traces/detail/<TraceId>
 
 ## Настройка и границы
 
+При сохранении профиля на сайте появляется `PUT /api/profile/me`. Его трассировка
+содержит три ресурса: `api-gateway`, `profile-service`, `auth-service` — последний
+проверяет действующую сессию через `/auth/me`. Внутренняя очистка после удаления
+аккаунта идёт отдельной трассировкой из фонового worker Auth.
+
 Общая библиотека [ServiceDefaults](ServiceDefaults/TelemetryExtensions.cs) подключена
-к обоим .NET-сервисам. Она экспортирует OTLP/gRPC на `aspire-dashboard:18889`.
+ко всем трём .NET-сервисам. Она экспортирует OTLP/gRPC на `aspire-dashboard:18889`.
 Журналы и трассировки отправляются пакетами примерно раз в 0,5 секунды, метрики —
 раз в 5 секунд. Если `OTEL_EXPORTER_OTLP_ENDPOINT` не задан, остаются JSON-журналы
 консоли без отправки в панель. Образы сервисов собираются с контекстом из корня
@@ -72,7 +77,7 @@ http://127.0.0.1:18888/traces/detail/<TraceId>
 и `/api/health/*` исключены из HTTP-журналов и трассировок, чтобы не засорять показ.
 Метрики HTTP включают проверки здоровья.
 
-В этом варианте инструментированы только Gateway и Auth. Nginx, браузер, SQL,
+В этом варианте инструментированы Gateway, Auth и ProfileService. Nginx, браузер, SQL,
 PostgreSQL и Mailpit не отправляют собственную телеметрию. Страница управления
 ресурсами AppHost не подключена. Телеметрия панели хранится в памяти: перезапуск
 контейнера очищает её; сохранённые выше скриншоты остаются в репозитории.
@@ -93,3 +98,8 @@ node --test observability/tests/telemetry.test.mjs
 
 Справка: [самостоятельный запуск Aspire Dashboard](https://aspire.dev/dashboard/standalone/),
 [HTTP API телеметрии](https://aspire.dev/dashboard/apis/).
+
+Импорт JSON также виден в Aspire: `POST /api/skills/admin/import` проходит через
+Gateway → SkillService → Auth (проверка роли). PUT профиля дополнительно обращается
+из ProfileService в SkillService за допустимыми навыками. Содержимое JSON-файла
+в HTTP-логи не записывается; история импорта хранится в `skill.catalog_imports`.

@@ -30,22 +30,24 @@ async function responseBody(response) {
 export async function request(
   path,
   body,
-  { method = "POST", authenticated = false, retry = true } = {},
+  { method = "POST", authenticated = false, retry = true, service = "auth" } = {},
 ) {
+  const services = { auth: "auth", profile: "profile", skills: "skills" };
+  if (!Object.hasOwn(services, service)) throw new Error("Неизвестный API-сервис.");
   const headers = {
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
   };
   let response;
   try {
-    response = await fetch(`/api/auth${path}`, {
+    response = await fetch(`/api/${services[service]}${path}`, {
       method,
       headers,
       credentials: "same-origin",
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
   } catch {
-    throw new Error("Сервис авторизации недоступен. Повторите попытку позже.");
+    throw new Error(service === "skills" ? "Справочник навыков недоступен. Повторите попытку позже." : service === "profile" ? "Сервис профиля недоступен. Повторите попытку позже." : "Сервис авторизации недоступен. Повторите попытку позже.");
   }
   if (response.status === 401 && authenticated && retry) {
     try {
@@ -54,7 +56,7 @@ export async function request(
       clearSession();
       throw new Error("Сессия завершена. Войдите снова.");
     }
-    return request(path, body, { method, authenticated, retry: false });
+    return request(path, body, { method, authenticated, retry: false, service });
   }
   const data = await responseBody(response);
   if (!response.ok) {
@@ -66,6 +68,8 @@ export async function request(
           : "Не удалось выполнить запрос. Повторите попытку."),
     );
     error.status = response.status;
+    error.details = Object.entries(data?.errors || {}).flatMap(([field, messages]) =>
+      (Array.isArray(messages) ? messages : [messages]).map((message) => `${field}: ${message}`));
     throw error;
   }
   return data;

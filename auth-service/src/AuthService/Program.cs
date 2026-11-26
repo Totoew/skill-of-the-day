@@ -108,6 +108,17 @@ builder.Services.AddScoped<SessionService>();
 builder.Services.AddScoped<MailOutbox>();
 builder.Services.AddHostedService<MailWorker>();
 builder.Services.AddHostedService<RetentionWorker>();
+builder.Services.AddHostedService<ProfileCleanupWorker>();
+builder.Services.AddHttpClient("profile-cleanup", client =>
+{
+    if (builder.Configuration["ProfileCleanup:Address"] is { Length: > 0 } address)
+    {
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var cleanupUri) || cleanupUri.Scheme is not ("http" or "https") || !string.IsNullOrEmpty(cleanupUri.UserInfo))
+            throw new InvalidOperationException("ProfileCleanup:Address must be an HTTP(S) URL without credentials.");
+        client.BaseAddress = cleanupUri;
+    }
+    client.Timeout = TimeSpan.FromSeconds(4);
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddRateLimiter(o =>

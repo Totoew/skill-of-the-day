@@ -1,7 +1,7 @@
 # API Gateway — Навык дня
 
 Отдельный ASP.NET Core 10 + YARP 2.3 сервис. Все браузерные `/api/*` идут
-через Gateway. На первом этапе подключён Auth Service; другие API добавляются
+через Gateway. Подключены Auth Service и ProfileService; другие API добавляются
 после согласования их контрактов. Своей БД и копий обработчиков регистрации нет.
 
 ## Запуск
@@ -14,7 +14,7 @@ docker compose ps
 ```
 
 Сайт: http://127.0.0.1:8080. Почта для разработки:
-http://127.0.0.1:8025. Gateway и Auth Service доступны только внутри Docker-сети;
+http://127.0.0.1:8025. Gateway, Auth Service и ProfileService доступны только внутри Docker-сети;
 отдельный публичный порт для Gateway не требуется.
 
 Цепочка запроса:
@@ -87,7 +87,7 @@ Gateway использует контекст корня репозитория,
 Внутренние `/health/live` и `/health/ready` используются Docker HEALTHCHECK.
 Readiness проверяет `/health/ready` Auth Service с таймаутом 3 секунды.
 Таймаут бездействия при проксировании — 30 секунд, Nginx ждёт 35 секунд.
-Пароли, ключи подписи и пользовательские данные остаются в Auth Service.
+Пароли и ключи подписи остаются в Auth Service, персональные настройки — в ProfileService.
 
 Nginx заменяет присланный клиентом X-Forwarded-For своим адресом соединения;
 Gateway также не использует произвольные forwarded-заголовки для принятия
@@ -96,6 +96,13 @@ Gateway также не использует произвольные forwarded-
 передачу реального IP; нельзя просто разрешать forwarded-заголовки от всех.
 
 ## Проверки
+
+Профиль доступен через `GET /api/profile/me`, `PUT /api/profile/me`,
+`DELETE /api/profile/me` и `GET /api/profile/catalog`. Swagger UI:
+http://127.0.0.1:8080/api/profile/swagger/index.html.
+Gateway удаляет `/api` один раз, ProfileService проверяет действующую сессию
+через Auth Service. Внутренний маршрут очистки аккаунтов не опубликован.
+Контракт и проверки — в [ProfileService](../backend/Services/ProfileService/README.md).
 
 Нужны .NET SDK 10 и Node.js 22+. Проверка транспорта запускает отдельный
 Gateway и временный HTTP-сервис на случайных loopback-портах, не трогая БД:
@@ -133,3 +140,11 @@ curl http://127.0.0.1:8080/api/health/ready
 их не создаёт. Чтобы подключить следующий сервис, добавьте его контейнер,
 маршрут и destination в `src/ApiGateway/appsettings.json`, согласуйте
 внешние пути, преобразование префиксов и авторизацию, затем проверьте контракт.
+
+## SkillService
+
+`/api/skills/*` направляется в SkillService с удалением `/api` один раз.
+`GET /api/skills/catalog` публичен; `/api/skills/admin/*` требует действующей сессии
+с ролью Admin, которую проверяет SkillService через Auth. Swagger:
+http://127.0.0.1:8080/api/skills/swagger/index.html. Контракт JSON-импорта:
+[SkillService](../backend/Services/SkillService/README.md).

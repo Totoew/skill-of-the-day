@@ -12,6 +12,7 @@
     <PackageVersion Include="Npgsql" Version="8.0.5" />
     <PackageVersion Include="FluentMigrator" Version="5.2.0" />
     <PackageVersion Include="FluentMigrator.Runner" Version="5.2.0" />
+    <PackageVersion Include="FluentMigrator.Runner.Core" Version="5.2.0" />
     <PackageVersion Include="FluentMigrator.Runner.Postgres" Version="5.2.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.0" />
   </ItemGroup>

@@ -48,6 +48,7 @@ public sealed class AuthDbContext(DbContextOptions<AuthDbContext> options)
     public DbSet<AuthSession> Sessions => Set<AuthSession>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OutgoingMail> OutgoingMails => Set<OutgoingMail>();
+    public DbSet<AccountDeletion> AccountDeletions => Set<AccountDeletion>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -61,5 +62,17 @@ public sealed class AuthDbContext(DbContextOptions<AuthDbContext> options)
         builder.Entity<RefreshToken>().HasOne(x => x.Session).WithMany().HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<OutgoingMail>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<OutgoingMail>().HasIndex(x => new { x.SentAt, x.NextAttemptAt });
+        builder.Entity<AccountDeletion>().HasIndex(x => new { x.CompletedAt, x.NextAttemptAt });
     }
+}
+
+// Independent of AppUser: the task must survive deletion of the user itself.
+public sealed class AccountDeletion
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset NextAttemptAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CompletedAt { get; set; }
+    public int Attempts { get; set; }
 }

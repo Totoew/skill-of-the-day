@@ -16,7 +16,25 @@ import {
   filterByLayer,
   skillContext,
   countLabel,
+  applySkillCatalog,
+  directions,
 } from "../../src/data.js";
+import { readFileSync } from "node:fs";
+
+test("Imported basic flags drive the profile and the recalculation input without inventing vacancies", () => {
+  const original = JSON.parse(readFileSync(new URL("../../../backend/Services/SkillService/catalog.example.json", import.meta.url), "utf8"));
+  const imported = { schemaVersion: 1, skills: [...original.skills, { code: "new-skill", name: "Новый навык", synonyms: [], directions: ["analyst"], basicFor: ["analyst"] }] };
+  try {
+    applySkillCatalog(imported);
+    assert.ok(directions.analyst.skills.includes("Новый навык"));
+    assert.ok(basicSkills.analyst.includes("Новый навык"));
+    assert.ok(!directions.qa.skills.includes("Новый навык"));
+    assert.equal(getScope(demoProfile).length, 120);
+    const jobs = [{ required: ["Новый навык"] }];
+    assert.equal(buildPlan(jobs, [], "analyst", ["Новый навык"]).length, 0);
+    assert.equal(buildPlan(jobs, [], "analyst", []).length, 1);
+  } finally { applySkillCatalog(original); }
+});
 
 test("Coverage, individual skill contribution and cumulative roadmap are consistent", () => {
   const jobs = getScope(demoProfile);

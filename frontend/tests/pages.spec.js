@@ -1,7 +1,23 @@
 import { test, expect } from "@playwright/test";
-import { demoProfile } from "../src/data.js";
+import { demoProfile, seedProfile } from "../src/data.js";
+import { readFileSync } from "node:fs";
+const catalogFixture = JSON.parse(readFileSync(new URL("../../backend/Services/SkillService/catalog.example.json", import.meta.url), "utf8"));
+
+const serverProfiles = new WeakMap();
 
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/skills/catalog", route => route.fulfill({ status: 200, json: { ...catalogFixture, version: 1 } }));
+  const state = { profile: null };
+  serverProfiles.set(page, state);
+  await page.route("**/api/profile/**", async (route) => {
+    if (route.request().method() === "PUT") {
+      const value = route.request().postDataJSON();
+      if (value.version !== (state.profile?.version || 0))
+        return route.fulfill({ status: 409, json: { title: "Профиль изменён на другом устройстве." } });
+      state.profile = { ...value, userId: "browser-test-user", version: value.version + 1 };
+    }
+    return route.fulfill({ status: 200, json: state.profile || { ...seedProfile, userId: "browser-test-user", version: 0 } });
+  });
   let user = {
     id: "browser-test-user",
     email: "alex@example.test",
@@ -31,15 +47,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function partialProfile(page, overrides = {}) {
+  serverProfiles.get(page).profile = { ...demoProfile, ...overrides, userId: "browser-test-user", version: 1 };
   await page.goto("/");
-  await page.evaluate(
-    (profile) =>
-      localStorage.setItem(
-        "skill-day-profile:browser-test-user",
-        JSON.stringify(profile),
-      ),
-    { ...demoProfile, ...overrides },
-  );
   await page.reload();
 }
 async function fits(page) {
@@ -51,6 +60,19 @@ async function fits(page) {
     overflow.width,
   );
 }
+
+test("Catalog import rejects invalid roots and oversized files before sending them to the server", async ({ page }) => {
+  await page.goto("/#/admin");
+  const panel = page.locator(".catalog-import"), input = panel.locator('input[type="file"]');
+  for (const value of ["null", "[]", "false"]) {
+    await input.setInputFiles({ name: "invalid.json", mimeType: "application/json", buffer: Buffer.from(value) });
+    await expect(panel.getByRole("alert")).toContainText("В корне JSON должен быть объект");
+    await expect(panel.getByRole("button", { name: "Проверить файл" })).toBeDisabled();
+  }
+  await input.setInputFiles({ name: "too-big.json", mimeType: "application/json", buffer: Buffer.alloc(1024 * 1024 + 1, " ") });
+  await expect(panel.getByRole("alert")).toContainText("не должен превышать 1 МБ");
+  await expect(panel.getByRole("button", { name: "Импортировать справочник" })).toHaveCount(0);
+});
 
 test("Deficit selection recalculates both views and evidence; tabs remain next to data", async ({
   page,
@@ -280,7 +302,8 @@ test("Zero state becomes a graphical roadmap through real skill selection and pe
     await page
       .getByRole("dialog")
       .getByLabel("Отметить навык изученным")
-      .check();
+      .click();
+    await expect(page.getByRole("dialog").getByLabel("Отметить навык изученным")).toBeChecked();
     await page.keyboard.press("Escape");
   }
   await expect(page.locator(".metrics").first()).toContainText(
@@ -343,7 +366,8 @@ test("Graph, table and selected skill share the same forecast; learned markers r
   await expect(dialog.locator(".coverage-comparison")).toContainText(
     "96 из 120 (80%)",
   );
-  await dialog.getByLabel("Отметить навык изученным").check();
+  await dialog.getByLabel("Отметить навык изученным").click();
+  await expect(dialog.getByLabel("Отметить навык изученным")).toBeChecked();
   await expect(
     dialog
       .locator(".required-skills li.studied")
@@ -636,4 +660,28 @@ test("A successful login recovers from an earlier auth-service outage", async ({
   await expect(
     page.getByRole("heading", { name: "Ваш roadmap", exact: true }),
   ).toBeVisible();
+});
+
+test("Profile loading failure is visible and can be retried without substituting local data", async ({ page }) => {
+  await page.route("**/api/profile/me", route => route.abort(), { times: 1 });
+  await page.goto("/#/profile");
+  await expect(page.getByRole("heading", { name: "Профиль временно недоступен" })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Сервис профиля недоступен");
+  await page.getByRole("button", { name: "Повторить загрузку", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Ваш профиль", exact: true })).toBeVisible();
+});
+
+test("Failed profile writes do not report success or change the saved server settings", async ({ page }) => {
+  await partialProfile(page);
+  await page.goto("/#/profile");
+  await page.getByLabel("Уровень", { exact: true }).selectOption("senior");
+  await page.route("**/api/profile/me", async route => {
+    if (route.request().method() === "PUT") return route.fulfill({ status: 503, json: { title: "Сервис профиля временно недоступен." } });
+    return route.fallback();
+  });
+  await page.getByRole("button", { name: "Сохранить изменения", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("недоступен");
+  await expect(page.getByText("Параметры сохранены на сервере", { exact: false })).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByLabel("Уровень", { exact: true })).toHaveValue("all");
 });

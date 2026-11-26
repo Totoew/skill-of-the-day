@@ -55,6 +55,8 @@ before(async () => {
       ...process.env,
       ASPNETCORE_ENVIRONMENT: "Development",
       ReverseProxy__Clusters__auth__Destinations__primary__Address: `http://127.0.0.1:${port}/`,
+      ReverseProxy__Clusters__profile__Destinations__primary__Address: `http://127.0.0.1:${port}/`,
+      ReverseProxy__Clusters__skills__Destinations__primary__Address: `http://127.0.0.1:${port}/`,
       ReverseProxy__Clusters__auth__HttpRequest__ActivityTimeout: "00:00:01",
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -120,6 +122,19 @@ test("Refresh preserves Set-Cookie attributes and response cache policy", async 
   assert.equal(response.headers.get("cache-control"), "no-store");
 });
 
+test("Profile routes preserve the version and Bearer token while removing /api once", async () => {
+  const response = await fetch(base + "/api/profile/me", {
+    method: "PUT", headers: { "Content-Type": "application/json", Authorization: "Bearer profile-transport" },
+    body: JSON.stringify({ direction: "analyst", version: 3, skills: ["SQL"] }),
+  });
+  assert.equal(response.status, 200);
+  const received = await response.json();
+  assert.equal(received.url, "/profile/me");
+  assert.equal(received.headers.authorization, "Bearer profile-transport");
+  assert.equal(JSON.parse(received.body).version, 3);
+  assert.equal(received.headers["x-request-id"], response.headers.get("x-trace-id"));
+});
+
 test("Service status codes, authentication challenges and DELETE responses survive proxying", async () => {
   const denied = await fetch(base + "/api/auth/me");
   assert.equal(denied.status, 401);
@@ -132,7 +147,7 @@ test("Service status codes, authentication challenges and DELETE responses survi
 });
 
 test("Unknown API routes return JSON 404 and cannot reach internal Auth health endpoints", async () => {
-  for (const path of ["/api/profile", "/auth/me", "/api/health/not-exposed", "/api/other/openapi.json"]) {
+  for (const path of ["/api/not-connected", "/auth/me", "/api/health/not-exposed", "/api/other/openapi.json"]) {
     const response = await fetch(base + path);
     assert.equal(response.status, 404, path);
     assert.match(response.headers.get("content-type"), /application\/problem\+json/);

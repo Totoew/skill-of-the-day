@@ -27,6 +27,8 @@ import SkillDialog from "../components/SkillDialog";
 import RoadmapGraph from "../components/RoadmapGraph";
 
 export default function Dashboard({ profile, update }) {
+  const regionKey = JSON.stringify(profile.regions);
+  const bases = basicSkills[profile.direction];
   const [mode, setMode] = useState("graph"),
     [selected, setSelected] = useState(null),
     [query, setQuery] = useState("");
@@ -37,7 +39,7 @@ export default function Dashboard({ profile, update }) {
     tabs = useRef(null);
   const baseJobs = useMemo(
     () => getScope(profile),
-    [profile.direction, profile.regions, profile.level],
+    [profile.direction, regionKey, profile.level],
   );
   const layerValues = useMemo(
     () => layers(baseJobs, profile.skills),
@@ -53,13 +55,13 @@ export default function Dashboard({ profile, update }) {
   );
   const computed = useMemo(
     () => buildPlan(jobs, profile.skills, profile.direction),
-    [jobs, profile.skills, profile.direction],
+    [jobs, profile.skills, profile.direction, bases],
   );
   const [steps, setSteps] = useState(computed);
   useEffect(() => {
     setLayer(null);
     setSelected(null);
-  }, [profile.direction, profile.regions, profile.level]);
+  }, [profile.direction, regionKey, profile.level]);
   useEffect(() => {
     if (layer !== activeLayer) setLayer(activeLayer);
   }, [layer, activeLayer]);
@@ -69,8 +71,7 @@ export default function Dashboard({ profile, update }) {
     setSteps(computed);
   }, [computed]);
   useEffect(() => () => worker.current?.terminate(), []);
-  const bases = basicSkills[profile.direction],
-    remaining = bases.filter((skill) => !profile.skills.includes(skill));
+  const remaining = bases.filter((skill) => !profile.skills.includes(skill));
   const covered = coverage(jobs, profile.skills),
     minimum = minimumDeficit(jobs, profile.skills);
   const noSkills = !directions[profile.direction].skills.some((skill) =>
@@ -116,6 +117,7 @@ export default function Dashboard({ profile, update }) {
       jobs,
       skills: profile.skills,
       direction: profile.direction,
+      bases: basicSkills[profile.direction],
     });
   }
   const open = (skill, step) =>

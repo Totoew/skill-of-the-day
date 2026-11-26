@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { directions, basicSkills } from "../data";
 import { Link, TypeTag, LevelSelect } from "../components/UI";
 import RegionPicker from "../RegionPicker";
@@ -8,6 +8,7 @@ export default function Profile({ profile, update, onDelete }) {
   const [draft, setDraft] = useState(structuredClone(profile)),
     [message, setMessage] = useState("");
   const skills = directions[draft.direction].skills;
+  useEffect(() => { setDraft(structuredClone(profile)); }, [profile.version]);
   function toggle(skill) {
     setDraft({
       ...draft,
@@ -17,10 +18,11 @@ export default function Profile({ profile, update, onDelete }) {
     });
     setMessage("");
   }
-  function save(event) {
+  async function save(event) {
     event.preventDefault();
-    update({ ...draft, email: profile.email });
-    setMessage("Параметры сохранены. План обновлён с учётом ваших изменений.");
+    setMessage("");
+    if (await update({ ...draft, email: profile.email }))
+      setMessage("Параметры сохранены на сервере. План обновлён с учётом ваших изменений.");
   }
   return (
     <section className="container page">

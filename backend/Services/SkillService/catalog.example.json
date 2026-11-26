@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "code": "requirements-analysis",
+      "name": "Анализ требований",
+      "synonyms": [],
+      "directions": [
+        "analyst"
+      ],
+      "basicFor": [
+        "analyst"
+      ]
+    },
+    {
+      "code": "data-modeling",
+      "name": "Моделирование данных",
+      "synonyms": [],
+      "directions": [
+        "analyst"
+      ],
+      "basicFor": [
+        "analyst"
+      ]
+    },
+    {
+      "code": "sql",
+      "name": "SQL",
+      "synonyms": [],
+      "directions": [
+        "analyst",
+        "csharp",
+        "qa"
+      ],
+      "basicFor": [
+        "analyst",
+        "csharp",
+        "qa"
+      ]
+    },
+    {
+      "code": "rest-api",
+      "name": "REST API",
+      "synonyms": [],
+      "directions": [
+        "analyst",
+        "csharp",
+        "qa"
+      ],
+      "basicFor": [
+        "analyst",
+        "csharp",
+        "qa"
+      ]
+    },
+    {
+      "code": "uml",
+      "name": "UML",
+      "synonyms": [],
+      "directions": [
+        "analyst"
+      ],
+      "basicFor": [
+        "analyst"
+      ]
+    },
+    {
+      "code": "git",
+      "name": "Git",
+      "synonyms": [],
+      "directions": [
+        "analyst",
+        "csharp",
+        "qa"
+      ],
+      "basicFor": [
+        "csharp"
+      ]
+    },
+    {
+      "code": "bpmn",
+      "name": "BPMN",
+      "synonyms": [],
+      "directions": [
+        "analyst"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "soap",
+      "name": "SOAP",
+      "synonyms": [],
+      "directions": [
+        "analyst"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "csharp",
+      "name": "C#",
+      "synonyms": [],
+      "directions": [
+        "csharp"
+      ],
+      "basicFor": [
+        "csharp"
+      ]
+    },
+    {
+      "code": "dotnet",
+      "name": ".NET",
+      "synonyms": [],
+      "directions": [
+        "csharp"
+      ],
+      "basicFor": [
+        "csharp"
+      ]
+    },
+    {
+      "code": "docker",
+      "name": "Docker",
+      "synonyms": [],
+      "directions": [
+        "csharp"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "entity-framework",
+      "name": "Entity Framework",
+      "synonyms": [],
+      "directions": [
+        "csharp"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "testing",
+      "name": "Тестирование",
+      "synonyms": [],
+      "directions": [
+        "csharp"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "test-design",
+      "name": "Тест-дизайн",
+      "synonyms": [],
+      "directions": [
+        "qa"
+      ],
+      "basicFor": [
+        "qa"
+      ]
+    },
+    {
+      "code": "test-cases",
+      "name": "Тест-кейсы",
+      "synonyms": [],
+      "directions": [
+        "qa"
+      ],
+      "basicFor": [
+        "qa"
+      ]
+    },
+    {
+      "code": "postman",
+      "name": "Postman",
+      "synonyms": [],
+      "directions": [
+        "qa"
+      ],
+      "basicFor": [
+        "qa"
+      ]
+    },
+    {
+      "code": "automated-testing",
+      "name": "Автотесты",
+      "synonyms": [],
+      "directions": [
+        "qa"
+      ],
+      "basicFor": []
+    },
+    {
+      "code": "python",
+      "name": "Python",
+      "synonyms": [],
+      "directions": [
+        "qa"
+      ],
+      "basicFor": []
+    }
+  ]
+}

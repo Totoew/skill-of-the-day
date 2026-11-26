@@ -7,6 +7,7 @@ import {
   SNAPSHOT_DATE,
 } from "../data";
 import { Modal } from "../components/UI";
+import CatalogImport from "../components/CatalogImport";
 
 function loadAdmin() {
   try {
@@ -76,6 +77,7 @@ export default function Admin() {
       <p className="scope-line">
         Системный анализ · Москва + удалённо · {SNAPSHOT_DATE}
       </p>
+      <CatalogImport />
       <div className="two-columns admin-metrics">
         <section className="metric metric-dark">
           <h2>Доля вакансий с нераспознанной структурой</h2>
@@ -214,8 +216,8 @@ export default function Admin() {
             </button>
           </section>
           <p className="small muted">
-            Действия изменяют локальный демонстрационный набор. Серверные данные
-            не затрагиваются.
+            Накопитель и пометки вакансий используют демонстрационные данные.
+            Импорт справочника выше сохраняет навыки на сервере.
           </p>
         </aside>
       </div>
